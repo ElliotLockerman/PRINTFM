@@ -36,7 +36,7 @@ _main:
     mov     x16, #98
     mov     x0, #423
     mov     x8, #12
-    PRINTF     "PRINTF 5: %d, %d, %d, %d, %llx\n", 8, 0, 16, 3, 29
+    PRINTF     "PRINTF 5: %d, %d, %d, %d, 0x%llx\n", 8, 0, 16, 3, 29
 
     // Don't set 30, its lr.
     // Don't set 29, its fp.
@@ -44,8 +44,7 @@ _main:
     mov     x16, #98
     mov     x0, #423
     mov     x8, #12
-    PRINTF     "PRINTF 5: %d, %d, %d, %d, %llx, 0x%llx\n", 8, 0, 16, 3, 29, 30
-
+    PRINTF     "PRINTF 5: %d, %d, %d, %d, 0x%llx, 0x%llx\n", 8, 0, 16, 3, 29, 30
 
     mov     sp, fp  
     ldp     fp, lr, [sp], #0x10

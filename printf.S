@@ -1,39 +1,45 @@
 
-.macro PRINTF_COUNT_ARGS_REC reg:req, first:req, rest:vararg
-    add     \reg, \reg, #1
+.macro PRINTF_COUNT_ARGS_REC dst:req, first:req, rest:vararg
+    add     \dst, \dst, #1
 .ifnb \rest
-    PRINTF_COUNT_ARGS_REC \reg, \rest
+    PRINTF_COUNT_ARGS_REC \dst, \rest
 .endif
 .endmacro
 
-.macro PRINTF_COUNT_ARGS reg:req, args:vararg
-    mov     \reg, #0
+// Count number of args to register dst.
+.macro PRINTF_COUNT_ARGS dst:req, args:vararg
+    mov     \dst, #0
 .ifnb \args
-    PRINTF_COUNT_ARGS_REC \reg, \args
+    PRINTF_COUNT_ARGS_REC \dst, \args
 .endif
 .endmacro
 
 
-.macro PRINTF_SAVE_ARGS_REC stack:req, first:req, rest:vararg
-    mov     x0, #\first
-    ldr     x0, [\stack, x0, LSL#3]
-    str     x0, [sp, x1, LSL#3]
-    add     x1, x1, #1
+.macro PRINTF_SAVE_ARGS_REC src:req, clobber_a:req, clobber_b:req, first:req, rest:vararg
+    mov     \clobber_b, #\first
+    ldr     \clobber_b, [\src, \clobber_b, LSL#3]
+    str     \clobber_b, [sp, \clobber_a, LSL#3]
+    add     \clobber_a, \clobber_a, #1
 
 .ifnb \rest
-    PRINTF_SAVE_ARGS_REC \stack, \rest
+    PRINTF_SAVE_ARGS_REC \src, \clobber_a, \clobber_b, \rest
 .endif
 .endmacro
 
-.macro PRINTF_SAVE_ARGS stack:req, args:vararg
-    mov     x1, #0
+// Copy registers from src (pointer to buffer where all registered have been
+// saved in ascending order) to sequential positions on stack. clobber_a and
+// clobber_b are registers that will be clobbered. args are integer literals of
+// the registers.
+.macro PRINTF_SAVE_ARGS src:req, clobber_a:req, clobber_b:req, args:vararg
+    mov     \clobber_a, #0
 .ifnb \args
-    PRINTF_SAVE_ARGS_REC \stack, \args
+    PRINTF_SAVE_ARGS_REC \src, \clobber_a, \clobber_b, \args
 .endif
 .endmacro
 
 
 .macro PRINTF str:req, args:vararg
+    // Save all registers so we can get them programatically.
     stp		x28, x29, [sp, #-0x10]!
     stp		x26, x27, [sp, #-0x10]!
     stp		x24, x25, [sp, #-0x10]!
@@ -54,15 +60,13 @@
     PRINTF_COUNT_ARGS x1, \args
 
     // Round x1 up to the nearest even (16 bytes).
-    and     x4, x1, #0x1
-    cbz     x4, skip_round_1_\@
-    add     x1, x1, #0x1
-skip_round_1_\@:
+    and     x4, x1, #0x1 // Get lowest bit (one iff odd).
+    add     x1, x1, x4   // Add it back (now its even).
 
-    mov     x3, sp
-    sub     sp, sp, x1, LSL#3
+    mov     x3, sp              // Save old sp so we can copy regs off it.
+    sub     sp, sp, x1, LSL#3   // Allocate space on stack for printf varargs.
 
-    PRINTF_SAVE_ARGS x3, \args
+    PRINTF_SAVE_ARGS x3, x0, x1, \args
 
     adrp        x0, fmt_\@@PAGE
     add         x0, x0, fmt_\@@PAGEOFF
@@ -76,12 +80,10 @@ fmt_\@:
     PRINTF_COUNT_ARGS x1, \args
 
     // Round x1 up to the nearest even (16 bytes).
-    and     x4, x1, #0x1
-    cbz     x4, skip_round_2_\@
-    add     x1, x1, #0x1
-skip_round_2_\@:
+    and     x4, x1, #0x1 // Get lowest bit (one iff odd).
+    add     x1, x1, x4   // Add it back (now we're even).
 
-    add     sp, sp, x1, LSL#3
+    add     sp, sp, x1, LSL#3   // Deallocate space for printf varargs.
 
     ldp		x0, x1, [sp], #0x10
     ldp		x2, x3, [sp], #0x10
