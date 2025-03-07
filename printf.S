@@ -1,6 +1,39 @@
 
-.macro PRINTF str:req, a, b, c, d
-    stp		x30, x31, [sp, #-0x10]!
+.macro PRINTF_COUNT_ARGS_REC reg:req, first:req, rest:vararg
+    add     \reg, \reg, #1
+.ifnb \rest
+    PRINTF_COUNT_ARGS_REC \reg, \rest
+.endif
+.endmacro
+
+.macro PRINTF_COUNT_ARGS reg:req, args:vararg
+    mov     \reg, #0
+.ifnb \args
+    PRINTF_COUNT_ARGS_REC \reg, \args
+.endif
+.endmacro
+
+
+.macro PRINTF_SAVE_ARGS_REC stack:req, first:req, rest:vararg
+    mov     x0, #\first
+    ldr     x0, [\stack, x0, LSL#3]
+    str     x0, [sp, x1, LSL#3]
+    add     x1, x1, #1
+
+.ifnb \rest
+    PRINTF_SAVE_ARGS_REC \stack, \rest
+.endif
+.endmacro
+
+.macro PRINTF_SAVE_ARGS stack:req, args:vararg
+    mov     x1, #0
+.ifnb \args
+    PRINTF_SAVE_ARGS_REC \stack, \args
+.endif
+.endmacro
+
+
+.macro PRINTF str:req, args:vararg
     stp		x28, x29, [sp, #-0x10]!
     stp		x26, x27, [sp, #-0x10]!
     stp		x24, x25, [sp, #-0x10]!
@@ -17,56 +50,19 @@
     stp		x2, x3, [sp, #-0x10]!
     stp		x0, x1, [sp, #-0x10]!
 
+
+    PRINTF_COUNT_ARGS x1, \args
+
+    // Round x1 up to the nearest even (16 bytes).
+    and     x4, x1, #0x1
+    cbz     x4, skip_round_1_\@
+    add     x1, x1, #0x1
+skip_round_1_\@:
+
     mov     x3, sp
-    sub     sp, sp, #0x100
+    sub     sp, sp, x1, LSL#3
 
-    mov     x1, #0
-
-.ifnb \a
-    add     x1, x1, #1
-.endif
-
-.ifnb \b
-    add     x1, x1, #1
-.endif
-
-.ifnb \c
-    add     x1, x1, #1
-.endif
-
-.ifnb \d
-    add     x1, x1, #1
-.endif
-
-    // Number of args in x1. Subtract 1 to make it an index.
-
-.ifnb \d
-    sub     x1, x1, #1
-    mov     x0, #\d
-    ldr     x0, [x3, x0, LSL#3]
-    str     x0, [sp, x1, LSL#3]
-.endif
-
-.ifnb \c
-    sub     x1, x1, #1
-    mov     x0, #\c
-    ldr     x0, [x3, x0, LSL#3]
-    str     x0, [sp, x1, LSL#3]
-.endif
-
-.ifnb \b
-    sub     x1, x1, #1
-    mov     x0, #\b
-    ldr     x0, [x3, x0, LSL#3]
-    str     x0, [sp, x1, LSL#3]
-.endif
-
-.ifnb \a
-    sub     x1, x1, #1
-    mov     x0, #\a
-    ldr     x0, [x3, x0, LSL#3]
-    str     x0, [sp, x1, LSL#3]
-.endif
+    PRINTF_SAVE_ARGS x3, \args
 
     adrp        x0, fmt_\@@PAGE
     add         x0, x0, fmt_\@@PAGEOFF
@@ -77,7 +73,15 @@ fmt_\@:
     .asciz "\str"
 .text
 
-    add     sp, sp, #0x100
+    PRINTF_COUNT_ARGS x1, \args
+
+    // Round x1 up to the nearest even (16 bytes).
+    and     x4, x1, #0x1
+    cbz     x4, skip_round_2_\@
+    add     x1, x1, #0x1
+skip_round_2_\@:
+
+    add     sp, sp, x1, LSL#3
 
     ldp		x0, x1, [sp], #0x10
     ldp		x2, x3, [sp], #0x10
@@ -94,6 +98,5 @@ fmt_\@:
     ldp		x24, x25, [sp], #0x10
     ldp		x26, x27, [sp], #0x10
     ldp		x28, x29, [sp], #0x10
-    ldp		x30, x31, [sp], #0x10
 .endmacro
 
