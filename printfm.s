@@ -1,12 +1,9 @@
 
-.macro PRINTFM_COUNT_ARGS_REC dst:req, first:req, rest:vararg
-    add     \dst, \dst, #1
-.ifnb \rest
-    PRINTFM_COUNT_ARGS_REC \dst, \rest
-.endif
-.endmacro
+////////////////////////////////////////////////////////////////////////////////
+// PRINTF_SAVE_ARGS(dst: register req, args...: register)
+// Count number of args to register dst. 
+////////////////////////////////////////////////////////////////////////////////
 
-// Count number of args to register dst.
 .macro PRINTFM_COUNT_ARGS dst:req, args:vararg
     mov     \dst, #0
 .ifnb \args
@@ -14,7 +11,24 @@
 .endif
 .endmacro
 
+.macro PRINTFM_COUNT_ARGS_REC dst:req, first:req, rest:vararg
+    add     \dst, \dst, #1
+.ifnb \rest
+    PRINTFM_COUNT_ARGS_REC \dst, \rest
+.endif
+.endmacro
 
+
+////////////////////////////////////////////////////////////////////////////////
+// PRINTF_SAVE_ARGS (
+//     src: register req, clobber_a: register req, clobber_b: register req,
+//     args...: register int literals
+// )
+// Copy registers from src (pointer to buffer where all registered have been
+// saved in ascending order) to sequential positions on stack. clobber_a and
+// clobber_b are registers that will be clobbered. args are integer literals of
+// the registers.
+////////////////////////////////////////////////////////////////////////////////
 .macro PRINTFM_SAVE_ARGS_REC src:req, clobber_a:req, clobber_b:req, first:req, rest:vararg
     mov     \clobber_b, #\first
     ldr     \clobber_b, [\src, \clobber_b, LSL#3]
@@ -26,10 +40,6 @@
 .endif
 .endmacro
 
-// Copy registers from src (pointer to buffer where all registered have been
-// saved in ascending order) to sequential positions on stack. clobber_a and
-// clobber_b are registers that will be clobbered. args are integer literals of
-// the registers.
 .macro PRINTFM_SAVE_ARGS src:req, clobber_a:req, clobber_b:req, args:vararg
     mov     \clobber_a, #0
 .ifnb \args
@@ -38,6 +48,9 @@
 .endmacro
 
 
+////////////////////////////////////////////////////////////////////////////////
+// PRINTF(str: format string literal, args...: register int literals)
+////////////////////////////////////////////////////////////////////////////////
 .macro PRINTFM str:req, args:vararg
     // Save all registers so we can get them programatically.
     stp		x28, x29, [sp, #-0x10]!
@@ -95,10 +108,8 @@ fmt_\@:
     ldp		x14, x15, [sp], #0x10
     ldp		x16, x17, [sp], #0x10
     ldp		x18, x19, [sp], #0x10
-    ldp		x20, x21, [sp], #0x10
-    ldp		x22, x23, [sp], #0x10
-    ldp		x24, x25, [sp], #0x10
-    ldp		x26, x27, [sp], #0x10
-    ldp		x28, x29, [sp], #0x10
+
+    // The rest are callee-save, and we didn't clobber them in the macro itself.
+    add     sp, sp, 0x50
 .endmacro
 
