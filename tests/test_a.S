@@ -1,5 +1,5 @@
 
-.include "../printf.S"
+.include "../printf.s"
 
 .text
 .globl _main
