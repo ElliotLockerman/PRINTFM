@@ -1,6 +1,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
-// PRINTF_SAVE_ARGS(dst: register req, args...: register)
+// PRINTF_COUNT_ARGS(dst: register req, args...: register)
 // Count number of args to register dst. 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +20,7 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// PRINTF_SAVE_ARGS (
+// PRINTFM_COPY_ARGS (
 //     src: register req, clobber_a: register req, clobber_b: register req,
 //     args...: register int literals
 // )
@@ -29,21 +29,21 @@
 // clobber_b are registers that will be clobbered. args are integer literals of
 // the registers.
 ////////////////////////////////////////////////////////////////////////////////
-.macro PRINTFM_SAVE_ARGS_REC src:req, clobber_a:req, clobber_b:req, first:req, rest:vararg
+.macro PRINTFM_COPY_ARGS_REC src:req, clobber_a:req, clobber_b:req, first:req, rest:vararg
     mov     \clobber_b, #\first
     ldr     \clobber_b, [\src, \clobber_b, LSL#3]
     str     \clobber_b, [sp, \clobber_a, LSL#3]
     add     \clobber_a, \clobber_a, #1
 
 .ifnb \rest
-    PRINTFM_SAVE_ARGS_REC \src, \clobber_a, \clobber_b, \rest
+    PRINTFM_COPY_ARGS_REC \src, \clobber_a, \clobber_b, \rest
 .endif
 .endm
 
-.macro PRINTFM_SAVE_ARGS src:req, clobber_a:req, clobber_b:req, args:vararg
+.macro PRINTFM_COPY_ARGS src:req, clobber_a:req, clobber_b:req, args:vararg
     mov     \clobber_a, #0
 .ifnb \args
-    PRINTFM_SAVE_ARGS_REC \src, \clobber_a, \clobber_b, \args
+    PRINTFM_COPY_ARGS_REC \src, \clobber_a, \clobber_b, \args
 .endif
 .endm
 
@@ -79,7 +79,7 @@
     mov     x3, sp              // Save old sp so we can copy regs off it.
     sub     sp, sp, x1, LSL#3   // Allocate space on stack for printf varargs.
 
-    PRINTFM_SAVE_ARGS x3, x0, x1, \args
+    PRINTFM_COPY_ARGS x3, x0, x1, \args
 
     adrp        x0, fmt_\@@PAGE
     add         x0, x0, fmt_\@@PAGEOFF
