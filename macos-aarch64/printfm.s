@@ -52,21 +52,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 .macro PRINTFM str:req, args:vararg
     // Save all registers so we can get them programatically.
-    stp		x28, x29, [sp, #-0x10]!
-    stp		x26, x27, [sp, #-0x10]!
-    stp		x24, x25, [sp, #-0x10]!
-    stp		x22, x23, [sp, #-0x10]!
-    stp		x20, x21, [sp, #-0x10]!
-    stp		x18, x19, [sp, #-0x10]!
-    stp		x16, x17, [sp, #-0x10]!
-    stp		x14, x15, [sp, #-0x10]!
-    stp		x12, x13, [sp, #-0x10]!
-    stp		x10, x11, [sp, #-0x10]!
-    stp		x8, x9, [sp, #-0x10]!
-    stp		x6, x7, [sp, #-0x10]!
-    stp		x4, x5, [sp, #-0x10]!
-    stp		x2, x3, [sp, #-0x10]!
-    stp		x0, x1, [sp, #-0x10]!
+    stp     x28, x29, [sp, #-0x10]!
+    stp     x26, x27, [sp, #-0x10]!
+    stp     x24, x25, [sp, #-0x10]!
+    stp     x22, x23, [sp, #-0x10]!
+    stp     x20, x21, [sp, #-0x10]!
+    stp     x18, x19, [sp, #-0x10]!
+    stp     x16, x17, [sp, #-0x10]!
+    stp     x14, x15, [sp, #-0x10]!
+    stp     x12, x13, [sp, #-0x10]!
+    stp     x10, x11, [sp, #-0x10]!
+    stp     x8, x9, [sp, #-0x10]!
+    stp     x6, x7, [sp, #-0x10]!
+    stp     x4, x5, [sp, #-0x10]!
+    stp     x2, x3, [sp, #-0x10]!
+    stp     x0, x1, [sp, #-0x10]!
 
 
     // Count variadic arguments, and round up to the nearest even (16 bytes).
@@ -94,16 +94,16 @@ fmt_\@:
     add     sp, sp, x19, LSL#3   // Deallocate space for printf varargs.
 
     // Restore registers.
-    ldp		x0, x1, [sp], #0x10
-    ldp		x2, x3, [sp], #0x10
-    ldp		x4, x5, [sp], #0x10
-    ldp		x6, x7, [sp], #0x10
-    ldp		x8, x9, [sp], #0x10
-    ldp		x10, x11, [sp], #0x10
-    ldp		x12, x13, [sp], #0x10
-    ldp		x14, x15, [sp], #0x10
-    ldp		x16, x17, [sp], #0x10
-    ldp		x18, x19, [sp], #0x10
+    ldp     x0, x1, [sp], #0x10
+    ldp     x2, x3, [sp], #0x10
+    ldp     x4, x5, [sp], #0x10
+    ldp     x6, x7, [sp], #0x10
+    ldp     x8, x9, [sp], #0x10
+    ldp     x10, x11, [sp], #0x10
+    ldp     x12, x13, [sp], #0x10
+    ldp     x14, x15, [sp], #0x10
+    ldp     x16, x17, [sp], #0x10
+    ldp     x18, x19, [sp], #0x10
 
     // The rest are callee-save, and we didn't clobber them in the macro itself.
     add     sp, sp, 0x50
