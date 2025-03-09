@@ -70,14 +70,14 @@
     stp		x0, x1, [sp, #-0x10]!
 
 
-    PRINTFM_COUNT_ARGS x1, \args
+    PRINTFM_COUNT_ARGS x19, \args
 
     // Round x1 up to the nearest even (16 bytes).
-    and     x4, x1, #0x1 // Get lowest bit (one iff odd).
-    add     x1, x1, x4   // Add it back (now its even).
+    and     x4, x19, #0x1   // Get lowest bit (one iff odd).
+    add     x19, x19, x4    // Add it back (now its even).
 
     mov     x3, sp              // Save old sp so we can copy regs off it.
-    sub     sp, sp, x1, LSL#3   // Allocate space on stack for printf varargs.
+    sub     sp, sp, x19, LSL#3  // Allocate space on stack for printf varargs.
 
     PRINTFM_COPY_ARGS x3, x0, x1, \args
 
@@ -90,13 +90,7 @@ fmt_\@:
     .asciz "\str"
 .text
 
-    PRINTFM_COUNT_ARGS x1, \args
-
-    // Round x1 up to the nearest even (16 bytes).
-    and     x4, x1, #0x1 // Get lowest bit (one iff odd).
-    add     x1, x1, x4   // Add it back (now we're even).
-
-    add     sp, sp, x1, LSL#3   // Deallocate space for printf varargs.
+    add     sp, sp, x19, LSL#3   // Deallocate space for printf varargs.
 
     ldp		x0, x1, [sp], #0x10
     ldp		x2, x3, [sp], #0x10
