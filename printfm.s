@@ -16,7 +16,7 @@
 .ifnb \rest
     PRINTFM_COUNT_ARGS_REC \dst, \rest
 .endif
-.endmacro
+.endm
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,14 +38,14 @@
 .ifnb \rest
     PRINTFM_SAVE_ARGS_REC \src, \clobber_a, \clobber_b, \rest
 .endif
-.endmacro
+.endm
 
 .macro PRINTFM_SAVE_ARGS src:req, clobber_a:req, clobber_b:req, args:vararg
     mov     \clobber_a, #0
 .ifnb \args
     PRINTFM_SAVE_ARGS_REC \src, \clobber_a, \clobber_b, \args
 .endif
-.endmacro
+.endm
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -111,5 +111,5 @@ fmt_\@:
 
     // The rest are callee-save, and we didn't clobber them in the macro itself.
     add     sp, sp, 0x50
-.endmacro
+.endm
 
