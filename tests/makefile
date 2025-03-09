@@ -4,7 +4,7 @@ all: $(TARGETS)
 
 .PHONY: clean
 
-$(TARGETS): %:%.s ../printf.s
+$(TARGETS): %:%.s ../printfm.s
 
 clean:
 	@rm -f *.o $(TARGETS) || true
