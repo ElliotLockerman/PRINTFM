@@ -44,7 +44,25 @@ _main:
     mov     x16, #98
     mov     x0, #423
     mov     x8, #12
-    PRINTFM     "PRINTFM 5: %d, %d, %d, %d, 0x%llx, 0x%llx\n", 8, 0, 16, 3, 29, 30
+    PRINTFM     "PRINTFM 6: %d, %d, %d, %d, 0x%llx, 0x%llx\n", 8, 0, 16, 3, 29, 30
+
+    // Don't set 30, its lr.
+    // Don't set 29, its fp.
+    mov     x3, #72
+    mov     x16, #98
+    mov     x0, #423
+    mov     x8, #12
+    PRINTFM     "PRINTFM 7: %d, %d, %d, %d, 0x%llx, 0x%llx, %d\n", 8, 0, 16, 3, 29, 30, 0
+
+    // Don't set 30, its lr.
+    // Don't set 29, its fp.
+    mov     x3, #72
+    mov     x16, #98
+    mov     x0, #423
+    mov     x8, #12
+    PRINTFM     "PRINTFM 8: %d, %d, %d, %d, 0x%llx, 0x%llx, %d, %d\n", 8, 0, 16, 3, 29, 30, 0, 8
+
+
 
     mov     sp, fp  
     ldp     fp, lr, [sp], #0x10
