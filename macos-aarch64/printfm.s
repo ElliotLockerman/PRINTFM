@@ -21,31 +21,30 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRINTFM_COPY_ARGS (
-//     src: register req, clobber_a: register req, clobber_b: register req,
-//     args...: register int literals
+//     dst: register req, src: register req, clobber: register req,
+//     regs...: register int literals
 // )
-// Copy registers from src (pointer to buffer where all registered have been
-// saved in ascending order) to sequential positions on stack. clobber_a and
-// clobber_b are registers that will be clobbered. args are integer literals of
-// the registers.
+// Copy registers specified in regs from src array (pointer to buffer where all
+// registered have been saved in numeric order) to sequential addresses in dst
+// array. clobber is a registers that will be clobbered. args are integer literals
+// of the registers.
 ////////////////////////////////////////////////////////////////////////////////
-.macro PRINTFM_COPY_ARGS_REC src:req, clobber_a:req, clobber_b:req, first:req, rest:vararg
-    mov     \clobber_b, #\first
-    ldr     \clobber_b, [\src, \clobber_b, LSL#3]
-    str     \clobber_b, [sp, \clobber_a, LSL#3]
-    add     \clobber_a, \clobber_a, #1
+.macro PRINTFM_COPY_ARGS dst:req, src:req, clobber:req, args:vararg
+.ifnb \args
+    PRINTFM_COPY_ARGS_REC \dst, \src, \clobber, \args
+.endif
+.endm
+
+.macro PRINTFM_COPY_ARGS_REC dst:req, src:req, clobber:req, first:req, rest:vararg
+    mov     \clobber, #\first
+    ldr     \clobber, [\src, \clobber, LSL#3]
+    str     \clobber, [\dst], #0x8
 
 .ifnb \rest
-    PRINTFM_COPY_ARGS_REC \src, \clobber_a, \clobber_b, \rest
+    PRINTFM_COPY_ARGS_REC \dst, \src, \clobber, \rest
 .endif
 .endm
 
-.macro PRINTFM_COPY_ARGS src:req, clobber_a:req, clobber_b:req, args:vararg
-    mov     \clobber_a, #0
-.ifnb \args
-    PRINTFM_COPY_ARGS_REC \src, \clobber_a, \clobber_b, \args
-.endif
-.endm
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,20 +69,22 @@
     stp		x0, x1, [sp, #-0x10]!
 
 
+    // Count variadic arguments, and round up to the nearest even (16 bytes).
     PRINTFM_COUNT_ARGS x19, \args
-
-    // Round x1 up to the nearest even (16 bytes).
     and     x4, x19, #0x1   // Get lowest bit (one iff odd).
     add     x19, x19, x4    // Add it back (now its even).
 
-    mov     x3, sp              // Save old sp so we can copy regs off it.
+    // Allocate an array on the stack for variadic arguments to printf(), and
+    // copy the specified registers to it.
+    mov     x3, sp              // Get address of saved registers.
     sub     sp, sp, x19, LSL#3  // Allocate space on stack for printf varargs.
+    mov     x2, sp              // Get address of varargs array.
+    PRINTFM_COPY_ARGS x2, x3, x1, \args
 
-    PRINTFM_COPY_ARGS x3, x0, x1, \args
-
-    adrp        x0, fmt_\@@PAGE
-    add         x0, x0, fmt_\@@PAGEOFF
-    bl          _printf
+    // Get format string and call printf().
+    adrp    x0, fmt_\@@PAGE
+    add     x0, x0, fmt_\@@PAGEOFF
+    bl      _printf
 
 .data
 fmt_\@:
@@ -92,6 +93,7 @@ fmt_\@:
 
     add     sp, sp, x19, LSL#3   // Deallocate space for printf varargs.
 
+    // Restore registers.
     ldp		x0, x1, [sp], #0x10
     ldp		x2, x3, [sp], #0x10
     ldp		x4, x5, [sp], #0x10
