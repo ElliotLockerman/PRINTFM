@@ -9,7 +9,6 @@
 main:
     stp     fp, lr, [sp, #-0x10]!
     mov     fp, sp
-    sub     sp, sp, #0x10
 
     mov     x13, #-423
     adr     x1, msg
@@ -25,4 +24,6 @@ main:
     mov     x0, #0
     ret
 
+msg:
+    .asciz "foo"
 

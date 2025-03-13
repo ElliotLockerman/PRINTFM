@@ -9,7 +9,6 @@
 _main:
     stp     fp, lr, [sp, #-0x10]!
     mov     fp, sp
-    sub     sp, sp, #0x10
 
     PRINTFM     "PRINTFM 0\n"
 
