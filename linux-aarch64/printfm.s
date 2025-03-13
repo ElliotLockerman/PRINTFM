@@ -1,58 +1,34 @@
 
-
-////////////////////////////////////////////////////////////////////////////////
-// PRINTF_COUNT_ARGS(dst: register req, args...: register)
-// Count number of args to register dst.
-////////////////////////////////////////////////////////////////////////////////
-
-.macro PRINTFM_COUNT_ARGS dst:req, args:vararg
-    mov     \dst, #0
-.ifnb \args
-    PRINTFM_COUNT_ARGS_REC \dst, \args
-.endif
-.endm
-
-.macro PRINTFM_COUNT_ARGS_REC dst:req, first:req, rest:vararg
-    add     \dst, \dst, #1
-.ifnb \rest
-    PRINTFM_COUNT_ARGS_REC \dst, \rest
-.endif
-.endm
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // PRINTFM_COPY_ARGS (
-//     src: register req, clobber_a: register req, clobber_b: register req,
-//     args...: register int literals
+//     src: register, clobber_a: register, clobber_b: register, args...: integer literals
 // )
 // Copy registers from src (pointer to buffer where all registered have been
 // saved in ascending order) to sequential positions on stack. clobber_a and
 // clobber_b are registers that will be clobbered. args are integer literals of
 // the registers.
 ////////////////////////////////////////////////////////////////////////////////
-.macro PRINTFM_COPY_ARGS src:req, clobber_a:req, clobber_b:req, args:vararg
-    mov     \clobber_a, #0
+.macro PRINTFM_COPY_ARGS dst:req, src:req, clobber:req, args:vararg
 .ifnb \args
-    PRINTFM_COPY_ARGS_REC \src, \clobber_a, \clobber_b, \args
+    PRINTFM_COPY_ARGS_REC \dst, \src, \clobber, \args
 .endif
 .endm
 
-.macro PRINTFM_COPY_ARGS_REC src:req, clobber_a:req, clobber_b:req, first:req, rest:vararg
-    mov     \clobber_b, #\first
-    ldr     \clobber_b, [\src, \clobber_b, LSL#3]
-    str     \clobber_b, [sp, \clobber_a, LSL#3]
-    add     \clobber_a, \clobber_a, #1
+.macro PRINTFM_COPY_ARGS_REC dst:req, src:req, clobber:req, first:req, rest:vararg
+    mov     \clobber, #\first                   // Get the register number as an integer.
+    ldr     \clobber, [\src, \clobber, LSL#3]   // Use it to index the saved registers.
+    str     \clobber, [\dst], #0x8              // Save it to the next position.
 
 .ifnb \rest
-    PRINTFM_COPY_ARGS_REC \src, \clobber_a, \clobber_b, \rest
+    PRINTFM_COPY_ARGS_REC \dst, \src, \clobber, \rest
 .endif
 .endm
 
 ////////////////////////////////////////////////////////////////////////////////
+// PRINTFM_LIMIT_ARGS(a, b, c, d, e, f, g)
+// Produces a compile-time error if too many arguments are passed.
+////////////////////////////////////////////////////////////////////////////////
 
-// Produces an error if too many arguments are passed.
 .macro PRINTFM_LIMIT_ARGS a, b, c, d, e, f, g
 .endm
 
@@ -86,14 +62,13 @@
     stp     x0, x1, [sp, #-0x10]!
 
 
-    // PRINTFM_COUNT_ARGS x1, \args
     PRINTFM_LIMIT_ARGS \args
 
-    mov     x1, #PRINTFM_SLOTS
     mov     x3, sp              // Save old sp so we can copy regs off it.
+    mov     x1, #PRINTFM_SLOTS
     sub     sp, sp, x1, LSL#3   // Allocate space on stack for args.
-
-    PRINTFM_COPY_ARGS x3, x0, x1, \args
+    mov     x2, sp              // Get address of varargs array.
+    PRINTFM_COPY_ARGS x2, x3, x1, \args
 
     // Load varargs in to registers. Its ok to load more than were actually passed,
     // they'll never be read (assuming the format string is correct, which we
