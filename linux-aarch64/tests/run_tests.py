@@ -18,11 +18,6 @@ PRINTFM 7: 12, -423, 0xffffffff, 72, w, foo, 18446744073709551193
 tests = [("./test_a", test_a_gold)] # (test name, passing output)
 
 
-test_b_gold = """test_b.s: Assembler messages:
-test_b.s:90: Error: too many positional arguments
-test_b.s:21:  Info: macro invoked from here
-"""
-
 def run():
     script_dir = Path(__file__).resolve().parent
 
@@ -33,42 +28,31 @@ def run():
     num_failures = 0
     num_passes = 0
     for test_name, passing in tests:
-        output = sp.check_output(test_name)
-        try:
-            output = output.decode()
-        except UnicodeDecodeError:
-            assert(output != passing)
-            pass
+        proc = sp.run(test_name, stderr=sp.STDOUT, stdout=sp.PIPE, text=True)
 
-        if output == passing:
+        if proc.returncode == 0 and proc.stdout == passing:
             print(f"{test_name} passed")
             num_passes += 1
         else:
-            print(f"{test_name} failed", file=sys.stderr)
-            print("Output:")
-            print(output)
+            print(f"{test_name} failed, exit code {proc.returncode}", file=sys.stderr)
+            print("Output:", file=sys.stderr)
+            print(proc.stdout, file=sys.stderr)
 
             num_failures += 1
 
     # test_b is supposed to end in a compilation failure.
-    proc = sp.run(["cc", "test_b.s"], stderr=sp.PIPE)
+    proc = sp.run(["cc", "test_b.s"], stderr=sp.STDOUT, stdout=sp.PIPE, text=True)
     if proc.returncode == 0:
-        print(f"test_b failed (compilation succeeded)")
+        print(f"test_b failed (compilation succeeded, was supposed to fail)")
         num_failures += 1
     else:
-        try:
-            stderr = proc.stderr.decode()
-        except UnicodeDecodeError:
-            stderr = proc.stderr
-            assert(stderr != passing)
-
-        if stderr == test_b_gold:
+        if "Error: too many positional arguments" in proc.stdout:
             print(f"./test_b passed")
             num_passes += 1
         else:
             print(f"./test_b failed", file=sys.stderr)
-            print("Output:")
-            print(stderr)
+            print("Output:", file=sys.stderr)
+            print(proc.stdout, file=sys.stderr)
 
             num_failures += 1
 

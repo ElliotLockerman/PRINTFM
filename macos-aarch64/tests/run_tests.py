@@ -27,22 +27,18 @@ def run():
     num_failures = 0
     num_passes = 0
     for test_name, passing in tests:
-        output = sp.check_output(test_name)
-        try:
-            output = output.decode()
-        except UnicodeDecodeError:
-            assert(output != passing)
-            pass
+        proc = sp.run(test_name, stderr=sp.STDOUT, stdout=sp.PIPE, text=True)
 
-        if output == passing:
+        if proc.returncode == 0 and proc.stdout == passing:
             print(f"{test_name} passed")
             num_passes += 1
         else:
-            print(f"{test_name} failed", file=sys.stderr)
-            print("Output:")
-            print(output)
+            print(f"{test_name} failed, exit code {proc.returncode}", file=sys.stderr)
+            print("Output:", file=sys.stderr)
+            print(proc.stdout, file=sys.stderr)
 
             num_failures += 1
+
 
     if num_passes == 0 and num_failures == 0:
         print("No tests ran?")
