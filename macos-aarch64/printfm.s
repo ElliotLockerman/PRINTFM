@@ -1,7 +1,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
-// PRINTF_COUNT_ARGS(dst: register req, args...: register)
-// Count number of args to register dst. 
+// PRINTF_COUNT_ARGS(dst: register, args...: register)
+// Count number of args to dst.
 ////////////////////////////////////////////////////////////////////////////////
 
 .macro PRINTFM_COUNT_ARGS dst:req, args:vararg
@@ -21,8 +21,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRINTFM_COPY_ARGS (
-//     dst: register req, src: register req, clobber: register req,
-//     regs...: register int literals
+//     dst: register, src: register, clobber: register req, regs...: integer literals
 // )
 // Copy registers specified in regs from src array (pointer to buffer where all
 // registered have been saved in numeric order) to sequential addresses in dst
@@ -36,9 +35,9 @@
 .endm
 
 .macro PRINTFM_COPY_ARGS_REC dst:req, src:req, clobber:req, first:req, rest:vararg
-    mov     \clobber, #\first
-    ldr     \clobber, [\src, \clobber, LSL#3]
-    str     \clobber, [\dst], #0x8
+    mov     \clobber, #\first                   // Get the register number as an integer.
+    ldr     \clobber, [\src, \clobber, LSL#3]   // Use it to index the saved registers.
+    str     \clobber, [\dst], #0x8              // Save it to the next position.
 
 .ifnb \rest
     PRINTFM_COPY_ARGS_REC \dst, \src, \clobber, \rest
@@ -48,7 +47,7 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// PRINTF(str: format string literal, args...: register int literals)
+// PRINTF(str: string literal, args...: register number literals)
 ////////////////////////////////////////////////////////////////////////////////
 .macro PRINTFM str:req, args:vararg
     // Save all registers so we can get them programatically.
